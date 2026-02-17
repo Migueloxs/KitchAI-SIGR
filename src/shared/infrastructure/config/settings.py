@@ -24,6 +24,11 @@ class Settings:
     # Application
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     
+    # JWT (JSON Web Tokens) - Configuración para autenticación
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "")
+    JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
+    JWT_EXPIRATION_MINUTES: int = int(os.getenv("JWT_EXPIRATION_MINUTES", "60"))
+    
     def __init__(self):
         """Validar que las variables necesarias estén configuradas."""
         if not self.TURSO_DATABASE_URL:
@@ -34,6 +39,16 @@ class Settings:
             )
         if not self.TURSO_AUTH_TOKEN:
             raise ValueError("TURSO_AUTH_TOKEN no está configurado en el archivo .env")
+        
+        # Validar configuración JWT en producción
+        if self.is_production and not self.JWT_SECRET_KEY:
+            raise ValueError("JWT_SECRET_KEY no está configurado en el archivo .env")
+        
+        # En desarrollo, generar una clave temporal si no existe
+        if self.is_development and not self.JWT_SECRET_KEY:
+            import secrets
+            self.JWT_SECRET_KEY = secrets.token_urlsafe(32)
+            print("⚠️  JWT_SECRET_KEY no configurado. Usando clave temporal para desarrollo.")
     
     @property
     def is_production(self) -> bool:
