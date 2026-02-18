@@ -1,11 +1,17 @@
 [project]
 name = "kitchai-sigr"
 version = "0.1.0"
-description = "Add your description here"
+description = "Sistema de Gestión Integral para Restaurantes con KitchAI"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi[standard]>=0.128.0",
+    "libsql-client>=0.3.0",
+    "python-dotenv>=1.0.0",
+    "bcrypt>=4.1.0",
+    "pyjwt>=2.8.0",
+    "python-multipart>=0.0.9",
+    "pydantic[email]>=2.0.0",
 ]
 
 [tool.uv.workspace]
