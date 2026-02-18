@@ -35,6 +35,15 @@ $registerBody = @{
     role = "waiter"
 } | ConvertTo-Json
 
+# Additional test: registrar sin rol para verificar valor por defecto
+$registerNoRole = @{
+    name = "Usuario SinRol"
+    email = "norole_$timestamp@kitchai.com"
+    phone = "+18299999888"
+    password = "TestPass123!"
+    # omitimos el campo role
+} | ConvertTo-Json
+
 try {
     $newUser = Invoke-RestMethod -Uri "$baseUrl/api/auth/register" `
         -Method Post `
@@ -46,6 +55,19 @@ try {
     Write-Host "  - Email: $($newUser.email)" -ForegroundColor Gray
     Write-Host "  - Nombre: $($newUser.name)" -ForegroundColor Gray
     Write-Host "  - Rol: $($newUser.role_id)" -ForegroundColor Gray
+
+# ejecutar prueba de registro sin rol
+try {
+    $newUserNoRole = Invoke-RestMethod -Uri "$baseUrl/api/auth/register" \
+        -Method Post \
+        -ContentType "application/json" \
+        -Body $registerNoRole
+    Write-Host "[OK] Registro sin rol -> el sistema asignó rol: $($newUserNoRole.role_id)" -ForegroundColor Green
+} catch {
+    Write-Host "[ERROR] Fallo el registro sin rol" -ForegroundColor Red
+    Write-Host $_.Exception.Message -ForegroundColor Red
+    exit 1
+}
 } catch {
     Write-Host "[ERROR] Fallo el registro" -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red

@@ -119,7 +119,8 @@ El servidor estará disponible en: **http://localhost:8000**
 
 #### POST `/api/auth/register`
 
-Registra un nuevo usuario en el sistema.
+Registra un nuevo usuario en el sistema. Si no se incluye el campo `role`, el
+usuario recibirá automáticamente el rol **waiter** por defecto.
 
 **Request Body**:
 ```json
@@ -127,8 +128,8 @@ Registra un nuevo usuario en el sistema.
   "name": "Juan Pérez",
   "email": "juan.perez@example.com",
   "phone": "+1829555-1234",
-  "password": "SecurePass123!",
-  "role": "waiter"
+  "password": "SecurePass123!"
+  # "role" es opcional; si se omite se utiliza "waiter"
 }
 ```
 

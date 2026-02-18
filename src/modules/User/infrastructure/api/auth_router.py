@@ -14,6 +14,7 @@ from src.modules.User.application.usecases.login_user import LoginUserUseCase
 from src.modules.User.infrastructure.repositories.user_repository import UserRepository
 from src.modules.User.infrastructure.repositories.role_repository import RoleRepository
 from src.modules.User.infrastructure.repositories.login_attempt_repository import LoginAttemptRepository
+from src.modules.User.infrastructure.repositories.permission_repository import PermissionRepository
 from src.modules.User.domain.services.password_service import PasswordService
 from src.modules.User.domain.services.auth_service import AuthService
 from src.shared.infrastructure.config.settings import settings
@@ -66,9 +67,10 @@ def get_client_ip(request: Request) -> Optional[str]:
     summary="Registrar un nuevo usuario",
     description="""
     Crea un nuevo usuario en el sistema con las credenciales proporcionadas.
+    Si no se incluye el campo `role`, se asignará el rol **waiter** por defecto.
     
     **Criterios de Aceptación:**
-    - CA1: Acepta: Nombre, email, teléfono, contraseña, rol
+    - CA1: Acepta: Nombre, email, teléfono, contraseña, rol (opcional)
     - CA2: La contraseña se almacena con hash seguro (bcrypt)
     - Retorna código 201 con los datos del usuario (sin contraseña)
     
@@ -80,7 +82,7 @@ def get_client_ip(request: Request) -> Optional[str]:
         - Al menos una letra minúscula
         - Al menos un número
         - Al menos un carácter especial (!@#$%^&*(),.?":{}|<>)
-    - El rol debe ser: admin, employee o waiter
+    - El rol, si se provee, debe ser: admin, employee o waiter
     """,
     responses={
         201: {

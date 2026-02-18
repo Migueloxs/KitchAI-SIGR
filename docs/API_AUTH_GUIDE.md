@@ -17,7 +17,8 @@ FastAPI proporciona documentación interactiva automática:
 
 **POST** `/api/auth/register`
 
-Registra un nuevo usuario en el sistema.
+Registra un nuevo usuario en el sistema. Si no se envía el campo `role`,
+¡el sistema le asignará el rol **waiter** por defecto!
 
 #### Request Body
 
@@ -26,8 +27,8 @@ Registra un nuevo usuario en el sistema.
   "name": "Juan Pérez",
   "email": "juan.perez@example.com",
   "phone": "+1829555-1234",
-  "password": "SecurePass123!",
-  "role": "waiter"
+  "password": "SecurePass123!"
+  // "role" es opcional; por defecto se utiliza "waiter"
 }
 ```
 
@@ -40,7 +41,8 @@ Registra un nuevo usuario en el sistema.
   - Al menos una letra minúscula
   - Al menos un número
   - Al menos un carácter especial (!@#$%^&*(),.?":{}|<>)
-- **Role**: Debe ser uno de: `admin`, `employee`, `waiter`
+- **Role** (opcional): si se incluye debe ser uno de: `admin`, `employee`, `waiter`.
+  Si se omite, se asigna `waiter` automáticamente.
 
 #### Response (201 Created)
 

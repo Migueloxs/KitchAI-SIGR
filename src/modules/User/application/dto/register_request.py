@@ -43,9 +43,11 @@ class RegisterRequest(BaseModel):
         description="Contraseña segura (mínimo 8 caracteres, debe incluir mayúsculas, minúsculas, números y caracteres especiales)"
     )
     
+    # El campo `role` tiene un valor por defecto 'waiter'. Si no se incluye en la
+    # solicitud, Pydantic lo rellenará automáticamente.
     role: str = Field(
-        ...,
-        description="Rol del usuario en el sistema"
+        'waiter',
+        description="Rol del usuario en el sistema (admin, employee o waiter). Por defecto 'waiter'."
     )
     
     @field_validator('role')
@@ -95,6 +97,13 @@ class RegisterRequest(BaseModel):
                     "phone": "+1829555-1234",
                     "password": "SecurePass123!",
                     "role": "waiter"
+                },
+                {
+                    "name": "María López",
+                    "email": "maria.lopez@example.com",
+                    "phone": "+1829555-5678",
+                    "password": "OtraPass123!"
+                    # sin rol: se asigna waiter por defecto
                 }
             ]
         }

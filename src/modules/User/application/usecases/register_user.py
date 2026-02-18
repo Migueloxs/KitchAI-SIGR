@@ -4,7 +4,6 @@ Implementa toda la lógica de negocio para el registro de usuarios.
 """
 import uuid
 from datetime import datetime
-from typing import Tuple
 
 from src.modules.User.domain.entities.user import User
 from src.modules.User.domain.value_objects.email import Email
@@ -51,7 +50,7 @@ class RegisterUserUseCase:
         self.role_repository = role_repository
         self.password_service = password_service
     
-    def execute(self, request: RegisterRequest) -> Tuple[User, str]:
+    def execute(self, request: RegisterRequest) -> tuple[User, str | None]:
         """
         Ejecutar el caso de uso de registro.
         
@@ -70,10 +69,11 @@ class RegisterUserUseCase:
         if self.user_repository.email_exists(email.value):
             raise ValueError(f"El email {email.value} ya está registrado en el sistema")
         
-        # 2. Validar que el rol exista en la base de datos
-        role = self.role_repository.find_by_name(request.role)
+        # 2. Determinar rol (si no se especificó, usamos waiter por defecto)
+        requested_role = request.role if request.role is not None else 'waiter'
+        role = self.role_repository.find_by_name(requested_role)
         if not role:
-            raise ValueError(f"El rol '{request.role}' no existe en el sistema")
+            raise ValueError(f"El rol '{requested_role}' no existe en el sistema")
         
         # 3. Validar la contraseña contra las reglas de seguridad
         # El value object Password ya valida las reglas
