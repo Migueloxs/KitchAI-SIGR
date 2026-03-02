@@ -34,6 +34,15 @@ $registerBody = @{
     role = "waiter"
 } | ConvertTo-Json
 
+# prueba adicional: registro sin especificar rol
+$registerNoRoleBody = @{
+    name = "Usuario Test SinRol"
+    email = "norole_test_$timestamp@kitchai.com"
+    phone = "+18299999877"
+    password = "TestPass123!"
+    # role omitido
+} | ConvertTo-Json
+
 try {
     $newUser = Invoke-RestMethod -Uri "$baseUrl/api/auth/register" `
         -Method Post `
@@ -45,6 +54,22 @@ try {
     Write-Host "   - Email: $($newUser.email)" -ForegroundColor Gray
     Write-Host "   - Nombre: $($newUser.name)" -ForegroundColor Gray
     Write-Host "   - Rol ID: $($newUser.role_id)" -ForegroundColor Gray
+
+# invocar registro sin rol y verificar
+try {
+    $userNoRole = Invoke-RestMethod -Uri "$baseUrl/api/auth/register" `
+        -Method Post `
+        -ContentType "application/json" `
+        -Body $registerNoRoleBody
+    if ($userNoRole.role_id -like "*waiter*") {
+        Write-Host "   ✅ Registro sin rol asignado generó waiter (ID: $($userNoRole.role_id))" -ForegroundColor Green
+    } else {
+        Write-Host "   ⚠️  Rol por defecto inesperado: $($userNoRole.role_id)" -ForegroundColor Yellow
+    }
+} catch {
+    Write-Host "   ❌ Error al registrar sin rol: $($_.Exception.Message)" -ForegroundColor Red
+    exit 1
+}
 } catch {
     $errorDetail = $_.ErrorDetails.Message | ConvertFrom-Json
     Write-Host "   ❌ Error al registrar: $($errorDetail.detail)" -ForegroundColor Red

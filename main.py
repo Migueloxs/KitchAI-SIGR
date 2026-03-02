@@ -3,6 +3,8 @@ from fastapi.responses import HTMLResponse, JSONResponse
 
 from src.shared.infrastructure.database.turso_connection import turso_db
 from src.modules.User.infrastructure.api.auth_router import router as auth_router
+from src.modules.User.infrastructure.api.roles_router import router as roles_router
+from src.modules.Order.infrastructure.api.order_router import order_router
 
 # Configuración de la aplicación con metadata para Swagger/OpenAPI
 app = FastAPI(
@@ -55,6 +57,10 @@ app = FastAPI(
             "description": "Operaciones de registro, login y gestión de sesiones"
         },
         {
+            "name": "Roles y Permisos",
+            "description": "Gestión de roles, permisos y asignación de roles a usuarios"
+        },
+        {
             "name": "Salud",
             "description": "Endpoints para verificar el estado del sistema"
         }
@@ -63,6 +69,8 @@ app = FastAPI(
 
 # Incluir routers de módulos
 app.include_router(auth_router)
+app.include_router(roles_router)
+app.include_router(order_router)
 
 
 @app.on_event("startup")
@@ -70,6 +78,90 @@ async def startup_event():
     """Evento que se ejecuta al iniciar la aplicación."""
     print("🚀 Iniciando KitchAI...")
     # La conexión ya se inicializa automáticamente con el import
+    # Asegurar que los roles básicos existan en la base de datos.
+    try:
+        # el método execute de turso_db permite SQL directa
+        turso_db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS roles (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        # insertar roles con INSERT OR IGNORE para no duplicar
+        defaults = [
+            ('uuid-role-admin', 'admin', 'Administrador con acceso total'),
+            ('uuid-role-employee', 'employee', 'Empleado con acceso a inventario y reportes'),
+            ('uuid-role-waiter', 'waiter', 'Mesero con acceso a pedidos y mesas')
+        ]
+        for rid, name, desc in defaults:
+            turso_db.execute(
+                "INSERT OR IGNORE INTO roles (id, name, description) VALUES (?, ?, ?)",
+                [rid, name, desc]
+            )
+        print("✅ Roles por defecto verificados/creados")
+
+        # Asegurarse de que existan las tablas de permisos y relaciones
+        turso_db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS permissions (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        turso_db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS role_permissions (
+                id TEXT PRIMARY KEY,
+                role_id TEXT NOT NULL,
+                permission_id TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(role_id, permission_id)
+            )
+            """
+        )
+
+        # Cargar permisos básicos si faltan
+        perm_defaults = [
+            ('perm-1', 'manage_users', 'Gestionar usuarios'),
+            ('perm-2', 'manage_inventory', 'Gestionar inventario'),
+            ('perm-3', 'view_reports', 'Ver reportes'),
+            ('perm-4', 'manage_orders', 'Gestionar pedidos'),
+            ('perm-5', 'view_tables', 'Ver mesas')
+        ]
+        for pid, pname, pdesc in perm_defaults:
+            turso_db.execute(
+                "INSERT OR IGNORE INTO permissions (id, name, description) VALUES (?, ?, ?)",
+                [pid, pname, pdesc]
+            )
+        print("✅ Permisos por defecto verificados/creados")
+
+        # relaciones por defecto entre roles y permisos
+        rp_defaults = [
+            ('rp-1', 'uuid-role-admin', 'perm-1'),
+            ('rp-2', 'uuid-role-admin', 'perm-2'),
+            ('rp-3', 'uuid-role-admin', 'perm-3'),
+            ('rp-4', 'uuid-role-admin', 'perm-4'),
+            ('rp-5', 'uuid-role-admin', 'perm-5'),
+            ('rp-6', 'uuid-role-employee', 'perm-2'),
+            ('rp-7', 'uuid-role-employee', 'perm-3'),
+            ('rp-8', 'uuid-role-waiter', 'perm-4'),
+            ('rp-9', 'uuid-role-waiter', 'perm-5')
+        ]
+        for rid, roleid, permid in rp_defaults:
+            turso_db.execute(
+                "INSERT OR IGNORE INTO role_permissions (id, role_id, permission_id) VALUES (?, ?, ?)",
+                [rid, roleid, permid]
+            )
+        print("✅ Asociaciones rol-permiso creadas")
+    except Exception as e:
+        print(f"⚠️  Error al inicializar roles: {e}")
 
 
 @app.on_event("shutdown")

@@ -1,0 +1,104 @@
+@baseUrl = http://localhost:8000/api
+
+### ================= AUTENTICACIÓN =================
+
+### 1. Registrar Administrador
+# @name registerAdmin
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+    "name": "Admin Tester",
+    "email": "admin@kitchai.com",
+    "password": "Password123!",
+    "role_id": "uuid-role-admin"
+}
+
+### 2. Login Administrador (Obligatorio para capturar token)
+# @name loginAdmin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "admin@kitchai.com",
+    "password": "Password123!"
+}
+
+@adminToken = {{loginAdmin.response.body.token}}
+@waiterId = {{loginAdmin.response.body.user.id}}
+
+### ================= ROLES =================
+
+### 3. Obtener Roles
+GET {{baseUrl}}/roles/
+Authorization: Bearer {{adminToken}}
+
+### ================= MENÚ (Pre-requisito para Pedidos) =================
+# NOTA: Asegúrate de tener un MenuItem registrado para probar OrderItems
+# Como no hay endpoint visible de menú en el context actual, si falla crear pedidos por FK_CONSTRAINT
+# Tendrás que insertar un menu_item en DB primero, o crear un endpoint para ello.
+
+### ================= PEDIDOS (ORDERS) =================
+
+### 4. Crear un Pedido Nuevo
+# @name createOrder
+POST {{baseUrl}}/orders/
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "customer_name": "Juan Perez",
+  "customer_phone": "809-555-1234",
+  "table_number": 5,
+  "special_instructions": "Mesa cerca de la ventana",
+  "items": [
+    {
+      "menu_item_id": "item-123", 
+      "menu_item_name": "Hamburguesa Clásica",
+      "quantity": 2,
+      "unit_price": 350.00,
+      "special_notes": "Sin cebolla"
+    }
+  ]
+}
+
+@orderId = {{createOrder.response.body.id}}
+
+### 5. Obtener lista de Pedidos (Paginado)
+GET {{baseUrl}}/orders/?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### 6. Obtener un Pedido Específico
+GET {{baseUrl}}/orders/{{orderId}}
+Authorization: Bearer {{adminToken}}
+
+### 7. Actualizar Pedido (Modificando cliente o instrucciones)
+PUT {{baseUrl}}/orders/{{orderId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "customer_name": "Juan Perez Actualizado",
+  "customer_phone": "809-555-9999",
+  "special_instructions": "Mesa cerca de la puerta ahora"
+}
+
+### ================= GESTIÓN DE ITEMS DEL PEDIDO =================
+
+### 8. Agregar un nuevo Item al Pedido
+# @name addItem
+POST {{baseUrl}}/orders/{{orderId}}/items
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "menu_item_id": "item-456",
+    "menu_item_name": "Refresco",
+    "quantity": 3,
+    "unit_price": 50.00,
+    "special_notes": "Con mucho hielo"
+}
+
+### 9. Cancelar Pedido (DELETE lógico)
+DELETE {{baseUrl}}/orders/{{orderId}}
+Authorization: Bearer {{adminToken}}
