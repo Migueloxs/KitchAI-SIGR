@@ -4,6 +4,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from src.shared.infrastructure.database.turso_connection import turso_db
 from src.modules.User.infrastructure.api.auth_router import router as auth_router
 from src.modules.User.infrastructure.api.roles_router import router as roles_router
+from src.modules.Order.infrastructure.api.order_router import order_router
 
 # Configuración de la aplicación con metadata para Swagger/OpenAPI
 app = FastAPI(
@@ -69,6 +70,7 @@ app = FastAPI(
 # Incluir routers de módulos
 app.include_router(auth_router)
 app.include_router(roles_router)
+app.include_router(order_router)
 
 
 @app.on_event("startup")
