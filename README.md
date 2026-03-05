@@ -1,18 +1,26 @@
-# # KitchAI - Sistema Inteligente de Gestión de Restaurantes
+# KitchAI - Sistema Inteligente de Gestión de Restaurantes
 
-Sistema de gestión de restaurantes desarrollado con FastAPI y Turso DB, siguiendo Arquitectura Hexagonal.
+Sistema de gestión de restaurantes con backend en FastAPI y frontend en Next.js.
 
 ## 🚀 Tecnologías
 
 - **FastAPI**: Framework web moderno y rápido
 - **Turso DB**: Base de datos SQLite distribuida (LibSQL)
+- **Next.js**: Frontend web con App Router
+- **TypeScript**: Tipado estático para el frontend
 - **Python 3.13+**
 - **UV**: Gestor de paquetes rápido para Python
+- **pnpm**: Gestor de paquetes del frontend
 
 ## 📁 Estructura del Proyecto
 
 ```
 KitchAI-SIGR/
+├── frontend/                      # Landing page y frontend web en Next.js
+│   ├── app/                       # Rutas y paginas
+│   ├── components/                # Componentes reutilizables
+│   ├── public/                    # Assets estaticos
+│   └── package.json               # Dependencias del frontend
 ├── src/
 │   ├── modules/                    # Módulos de dominio
 │   │   └── User/                   # Módulo de usuarios
@@ -30,6 +38,18 @@ KitchAI-SIGR/
 ├── .env.example                    # Plantilla de variables de entorno
 └── pyproject.toml                  # Dependencias del proyecto
 ```
+
+## Frontend
+
+Para ejecutar la landing page:
+
+```bash
+cd frontend
+pnpm install
+pnpm dev
+```
+
+La aplicacion queda disponible en `http://localhost:3000`.
 
 ## ⚙️ Configuración
 
