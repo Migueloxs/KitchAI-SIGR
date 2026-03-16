@@ -282,3 +282,66 @@ async def login(request_data: LoginRequest, request: Request):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error al procesar el login. Por favor, intente nuevamente."
         )
+
+
+# Dependency para obtener el usuario actual desde JWT
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import jwt
+from typing import Dict
+
+security = HTTPBearer()
+
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, str]:
+    """
+    Dependency para obtener el usuario actual desde el token JWT.
+
+    Args:
+        credentials: Credenciales HTTP Bearer con el token JWT
+
+    Returns:
+        Dict con información del usuario: {"id": user_id, "email": email, "role_id": role_id}
+
+    Raises:
+        HTTPException: Si el token es inválido o expirado
+    """
+    try:
+        # Decodificar el token JWT
+        payload = jwt.decode(
+            credentials.credentials,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM]
+        )
+
+        # Extraer información del usuario
+        user_id = payload.get("user_id")
+        email = payload.get("email")
+        role_id = payload.get("role_id")
+
+        if not user_id or not email:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token inválido: falta información del usuario"
+            )
+
+        return {
+            "id": user_id,
+            "email": email,
+            "role_id": role_id
+        }
+
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expirado"
+        )
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Error de autenticación: {str(e)}"
+        )

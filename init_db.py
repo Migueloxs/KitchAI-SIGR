@@ -26,17 +26,22 @@ CREATE TABLE IF NOT EXISTS orders (
     tax_amount REAL NOT NULL DEFAULT 0 CHECK(tax_amount >= 0),
     discount_amount REAL NOT NULL DEFAULT 0 CHECK(discount_amount >= 0),
     final_amount REAL NOT NULL DEFAULT 0 CHECK(final_amount >= 0),
-    payment_status TEXT NOT NULL DEFAULT 'unpaid'
-        CHECK(payment_status IN ('unpaid','paid','refunded')),
+    payment_status TEXT NOT NULL DEFAULT 'PENDING'
+        CHECK(payment_status IN ('PENDING','PAID','REFUNDED')),
     payment_method TEXT
         CHECK(payment_method IN ('cash','card','transfer') OR payment_method IS NULL),
     special_instructions TEXT,
     waiter_id TEXT NOT NULL,
     cancelled_by TEXT,
     cancelled_at DATETIME,
+    cancellation_reason TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    preparation_started_at DATETIME,
+    ready_at DATETIME,
     completed_at DATETIME,
+    preparation_time INTEGER, -- tiempo en segundos
+    total_time INTEGER, -- tiempo en segundos
     FOREIGN KEY (waiter_id) REFERENCES users(id),
     FOREIGN KEY (cancelled_by) REFERENCES users(id)
 );
