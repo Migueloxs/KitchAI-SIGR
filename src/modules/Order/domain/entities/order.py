@@ -1,7 +1,15 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
+from enum import Enum
 from src.modules.Order.domain.entities.order_item import OrderItem
+
+class OrderStatus(str, Enum):
+    PENDING = "pending"
+    PREPARING = "preparing"
+    READY = "ready"
+    SERVED = "served"
+    CANCELLED = "cancelled"
 
 class Order(BaseModel):
     id: str
@@ -9,7 +17,7 @@ class Order(BaseModel):
     customer_name: str
     customer_phone: Optional[str] = None
     table_number: Optional[int] = None
-    status: str
+    status: OrderStatus
     total_amount: float = 0.0
     tax_amount: float = 0.0
     discount_amount: float = 0.0
@@ -20,8 +28,13 @@ class Order(BaseModel):
     waiter_id: Optional[str] = None
     cancelled_by: Optional[str] = None
     cancelled_at: Optional[datetime] = None
+    cancellation_reason: Optional[str] = None
     created_at: datetime = datetime.now()
     updated_at: datetime = datetime.now()
+    preparation_started_at: Optional[datetime] = None
+    ready_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
+    preparation_time: Optional[int] = None  # in seconds
+    total_time: Optional[int] = None  # in seconds
     items: List[OrderItem] = []
 
