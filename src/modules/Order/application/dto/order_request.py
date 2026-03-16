@@ -15,3 +15,7 @@ class OrderRequestDTO(BaseModel):
     special_instructions: Optional[str] = None
     items: List[OrderItemRequestDTO]
 
+class OrderStatusUpdateRequestDTO(BaseModel):
+    new_status: str
+    cancellation_reason: Optional[str] = None
+
