@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
+from src.modules.Order.domain.entities.order import ServiceType
 
 class OrderItemRequestDTO(BaseModel):
     menu_item_id: str
@@ -13,6 +14,7 @@ class OrderRequestDTO(BaseModel):
     customer_phone: Optional[str] = None
     table_number: Optional[int] = None
     special_instructions: Optional[str] = None
+    service_type: ServiceType
     items: List[OrderItemRequestDTO]
 
 class OrderStatusUpdateRequestDTO(BaseModel):

@@ -9,7 +9,13 @@ class OrderStatus(str, Enum):
     PREPARING = "preparing"
     READY = "ready"
     SERVED = "served"
+    DELIVERED = "delivered"
     CANCELLED = "cancelled"
+
+class ServiceType(str, Enum):
+    DINE_IN = "dine_in"
+    TAKEOUT = "takeout"
+    DELIVERY = "delivery"
 
 class Order(BaseModel):
     id: str
@@ -18,6 +24,7 @@ class Order(BaseModel):
     customer_phone: Optional[str] = None
     table_number: Optional[int] = None
     status: OrderStatus
+    service_type: ServiceType
     total_amount: float = 0.0
     tax_amount: float = 0.0
     discount_amount: float = 0.0

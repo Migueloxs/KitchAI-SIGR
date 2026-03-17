@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
+from src.modules.Order.domain.entities.order import ServiceType
 
 class OrderItemResponseDTO(BaseModel):
     id: str
@@ -18,6 +19,7 @@ class OrderResponseDTO(BaseModel):
     customer_phone: Optional[str] = None
     table_number: Optional[int] = None
     status: str
+    service_type: ServiceType
     total_amount: float
     tax_amount: float
     discount_amount: float
