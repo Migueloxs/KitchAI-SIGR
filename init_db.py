@@ -21,7 +21,9 @@ CREATE TABLE IF NOT EXISTS orders (
     customer_phone TEXT,
     table_number INTEGER,
     status TEXT NOT NULL DEFAULT 'pending'
-        CHECK(status IN ('pending','preparing','ready','served','cancelled')),
+        CHECK(status IN ('pending','preparing','ready','served','delivered','cancelled')),
+    service_type TEXT NOT NULL DEFAULT 'dine_in'
+        CHECK(service_type IN ('dine_in','takeout','delivery')),
     total_amount REAL NOT NULL DEFAULT 0 CHECK(total_amount >= 0),
     tax_amount REAL NOT NULL DEFAULT 0 CHECK(tax_amount >= 0),
     discount_amount REAL NOT NULL DEFAULT 0 CHECK(discount_amount >= 0),

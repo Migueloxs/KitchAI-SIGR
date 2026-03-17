@@ -15,7 +15,7 @@ def test_complete_order_status_system():
 
     try:
         # Importar componentes
-        from src.modules.Order.domain.entities.order import Order, OrderStatus
+        from src.modules.Order.domain.entities.order import Order, OrderStatus, ServiceType
         from src.modules.Order.domain.services.order_status_service import OrderStatusService
         from src.modules.Order.application.usecases.order_usecases import OrderService
         from src.modules.Order.application.dto.order_request import OrderStatusUpdateRequestDTO
@@ -82,6 +82,7 @@ def test_complete_order_status_system():
             order_number="ORD-2026-TEST",
             customer_name="Test Customer",
             status=OrderStatus.PENDING,
+            service_type=ServiceType.DINE_IN,
             total_amount=25.99,
             tax_amount=4.02,
             final_amount=30.01,

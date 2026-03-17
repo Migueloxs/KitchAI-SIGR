@@ -1,7 +1,7 @@
 from src.modules.Order.infrastructure.repositories.order_repository import OrderRepository
 from src.modules.Order.application.dto.order_request import OrderRequestDTO, OrderStatusUpdateRequestDTO
 from src.modules.Order.application.dto.order_response import OrderResponseDTO, OrderItemResponseDTO
-from src.modules.Order.domain.entities.order import Order, OrderStatus
+from src.modules.Order.domain.entities.order import Order, OrderStatus, ServiceType
 from src.modules.Order.domain.entities.order_item import OrderItem
 from src.modules.Order.domain.services.order_status_service import OrderStatusService
 import uuid
@@ -47,6 +47,7 @@ class OrderService:
             customer_phone=request.customer_phone,
             table_number=request.table_number,
             status=OrderStatus.PENDING,
+            service_type=request.service_type,
             total_amount=total_amount,
             tax_amount=tax_amount,
             final_amount=final_amount,
@@ -73,7 +74,7 @@ class OrderService:
             raise ValueError(f"Estado '{request.new_status}' no válido. Estados permitidos: {[s.value for s in OrderStatus]}")
 
         # Validar transición
-        is_valid, error_msg = OrderStatusService.validate_transition(order.status, new_status)
+        is_valid, error_msg = OrderStatusService.validate_transition(order, new_status)
         if not is_valid:
             raise ValueError(error_msg)
 
@@ -109,6 +110,7 @@ class OrderService:
             customer_phone=order.customer_phone,
             table_number=order.table_number,
             status=order.status.value,
+            service_type=order.service_type,
             total_amount=order.total_amount,
             tax_amount=order.tax_amount,
             discount_amount=order.discount_amount,
