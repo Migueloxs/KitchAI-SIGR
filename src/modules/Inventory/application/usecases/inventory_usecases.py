@@ -6,7 +6,9 @@ from src.modules.Inventory.application.dto.inventory_request import (
     CreateInventoryItemRequestDTO,
     UpdateInventoryItemRequestDTO,
 )
+from src.modules.Inventory.application.dto.inventory_alert_response import InventoryAlertResponseDTO
 from src.modules.Inventory.application.dto.inventory_response import InventoryItemResponseDTO
+from src.modules.Inventory.domain.entities.inventory_alert import InventoryAlert
 from src.modules.Inventory.domain.entities.inventory_item import InventoryItem
 from src.modules.Inventory.infrastructure.repositories.inventory_repository import InventoryRepository
 
@@ -71,6 +73,10 @@ class InventoryService:
 
         return self.repo.delete(item_id)
 
+    def get_active_alerts(self) -> List[InventoryAlertResponseDTO]:
+        alerts = self.repo.get_active_alerts()
+        return [self._to_alert_response_dto(alert) for alert in alerts]
+
     def _to_response_dto(self, item: InventoryItem) -> InventoryItemResponseDTO:
         return InventoryItemResponseDTO(
             id=item.id,
@@ -82,4 +88,18 @@ class InventoryService:
             is_below_minimum_stock=item.current_quantity <= item.minimum_stock,
             created_at=item.created_at,
             updated_at=item.updated_at,
+        )
+
+    def _to_alert_response_dto(self, alert: InventoryAlert) -> InventoryAlertResponseDTO:
+        return InventoryAlertResponseDTO(
+            id=alert.id,
+            inventory_item_id=alert.inventory_item_id,
+            order_id=alert.order_id,
+            alert_type=alert.alert_type,
+            message=alert.message,
+            current_quantity=alert.current_quantity,
+            minimum_stock=alert.minimum_stock,
+            is_resolved=alert.is_resolved,
+            created_at=alert.created_at,
+            resolved_at=alert.resolved_at,
         )

@@ -16,6 +16,7 @@ Base path: `/api/inventory`
 
 - `POST /` crea articulo.
 - `GET /` lista articulos.
+- `GET /alerts` lista alertas internas de inventario activas.
 - `GET /{item_id}` obtiene un articulo por ID.
 - `PUT /{item_id}` actualiza un articulo.
 - `DELETE /{item_id}` elimina un articulo.
@@ -43,8 +44,18 @@ Campos:
 Se agrego migracion versionada:
 
 - `001_create_inventory_items.sql`
+- `002_inventory_order_auto_update.sql`
 
 El runner se ejecuta automaticamente en startup y registra versiones aplicadas en `schema_migrations`.
+
+## Actualizacion Automatica tras Pedidos
+
+Cuando un pedido pasa de `pending` a `preparing`:
+
+- El sistema descuenta automaticamente del inventario cada item del pedido.
+- El descuento se hace de forma idempotente por pedido (no descuenta dos veces).
+- Si un articulo queda en stock minimo o por debajo, se registra una alerta interna en `inventory_alerts`.
+- Las alertas se consultan con `GET /api/inventory/alerts`.
 
 ## Prueba Rapida
 

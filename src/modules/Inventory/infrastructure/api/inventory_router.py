@@ -6,6 +6,7 @@ from src.modules.Inventory.application.dto.inventory_request import (
     CreateInventoryItemRequestDTO,
     UpdateInventoryItemRequestDTO,
 )
+from src.modules.Inventory.application.dto.inventory_alert_response import InventoryAlertResponseDTO
 from src.modules.Inventory.application.dto.inventory_response import InventoryItemResponseDTO
 from src.modules.Inventory.application.usecases.inventory_usecases import InventoryService
 from src.modules.User.infrastructure.api.auth_router import get_current_user
@@ -39,6 +40,13 @@ def list_inventory_items(user=Depends(get_current_user)):
     _require_admin(user)
     service = InventoryService()
     return service.get_items()
+
+
+@inventory_router.get("/alerts", response_model=List[InventoryAlertResponseDTO])
+def list_inventory_alerts(user=Depends(get_current_user)):
+    _require_admin(user)
+    service = InventoryService()
+    return service.get_active_alerts()
 
 
 @inventory_router.get("/{item_id}", response_model=InventoryItemResponseDTO)
