@@ -80,6 +80,56 @@ app.include_router(order_router)
 app.include_router(inventory_router)
 
 
+def _ensure_table_columns(table_name: str, required_columns: dict[str, str]) -> None:
+    """Asegura columnas necesarias en tablas legacy sin romper entornos ya migrados."""
+    existing_result = turso_db.execute(f"PRAGMA table_info({table_name})")
+    existing_columns = {row[1] for row in existing_result.rows}
+
+    for column_name, column_sql in required_columns.items():
+        if column_name in existing_columns:
+            continue
+
+        turso_db.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_sql}")
+        print(f"✅ Columna agregada en {table_name}: {column_name}")
+
+
+def _ensure_orders_compatibility_schema() -> None:
+    """Mantiene compatibilidad con esquemas antiguos de pedidos."""
+    _ensure_table_columns(
+        "orders",
+        {
+            "order_number": "TEXT",
+            "customer_name": "TEXT",
+            "customer_phone": "TEXT",
+            "service_type": "TEXT",
+            "total_amount": "REAL DEFAULT 0",
+            "tax_amount": "REAL DEFAULT 0",
+            "discount_amount": "REAL DEFAULT 0",
+            "final_amount": "REAL DEFAULT 0",
+            "payment_status": "TEXT DEFAULT 'PENDING'",
+            "payment_method": "TEXT",
+            "special_instructions": "TEXT",
+            "cancelled_by": "TEXT",
+            "cancelled_at": "TEXT",
+            "cancellation_reason": "TEXT",
+            "preparation_started_at": "TEXT",
+            "ready_at": "TEXT",
+            "completed_at": "TEXT",
+            "preparation_time": "INTEGER",
+            "total_time": "INTEGER",
+        },
+    )
+
+    _ensure_table_columns(
+        "order_items",
+        {
+            "menu_item_name": "TEXT",
+            "special_notes": "TEXT",
+            "created_at": "TEXT",
+        },
+    )
+
+
 @app.on_event("startup")
 async def startup_event():
     """Evento que se ejecuta al iniciar la aplicación."""
@@ -89,6 +139,7 @@ async def startup_event():
     try:
         # Ejecutar migraciones versionadas
         run_migrations(turso_db)
+        _ensure_orders_compatibility_schema()
 
         # el método execute de turso_db permite SQL directa
         turso_db.execute(

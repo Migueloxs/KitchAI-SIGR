@@ -4,6 +4,7 @@ from src.modules.Order.application.dto.order_response import OrderResponseDTO, O
 from src.modules.Order.domain.entities.order import Order, OrderStatus, ServiceType
 from src.modules.Order.domain.entities.order_item import OrderItem
 from src.modules.Order.domain.services.order_status_service import OrderStatusService
+from src.modules.Inventory.application.usecases.inventory_order_sync_usecase import InventoryOrderSyncService
 import uuid
 from datetime import datetime
 from typing import Optional
@@ -11,6 +12,7 @@ from typing import Optional
 class OrderService:
     def __init__(self):
         self.repo = OrderRepository()
+        self.inventory_sync_service = InventoryOrderSyncService()
 
     def create_order(self, waiter_id: str, request: OrderRequestDTO) -> OrderResponseDTO:
         order_id = str(uuid.uuid4())
@@ -88,6 +90,12 @@ class OrderService:
         updated_order = OrderStatusService.apply_status_change(
             order, new_status, user_id, request.cancellation_reason
         )
+
+        # CA1 y CA3: al confirmar el pedido (pending -> preparing) descontar inventario inmediatamente.
+        if order.status == OrderStatus.PENDING and new_status == OrderStatus.PREPARING:
+            self.inventory_sync_service.apply_stock_discount_for_confirmed_order(
+                updated_order, triggered_status=new_status.value
+            )
 
         # Guardar en la base de datos
         saved_order = self.repo.update_status_with_details(updated_order)
