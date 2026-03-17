@@ -130,8 +130,9 @@ class InventoryRepository(IInventoryRepository):
             """
             INSERT INTO inventory_alerts (
                 id, inventory_item_id, order_id, alert_type, message,
-                current_quantity, minimum_stock, is_resolved, created_at, resolved_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                current_quantity, minimum_stock, is_viewed, is_resolved,
+                check_date, created_at, viewed_at, resolved_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 alert_id,
@@ -141,8 +142,11 @@ class InventoryRepository(IInventoryRepository):
                 alert.message,
                 alert.current_quantity,
                 alert.minimum_stock,
+                1 if alert.is_viewed else 0,
                 1 if alert.is_resolved else 0,
+                alert.check_date,
                 alert.created_at.isoformat(),
+                alert.viewed_at.isoformat() if alert.viewed_at else None,
                 alert.resolved_at.isoformat() if alert.resolved_at else None,
             ],
         )
@@ -152,13 +156,117 @@ class InventoryRepository(IInventoryRepository):
         result = self.client.execute(
             """
             SELECT id, inventory_item_id, order_id, alert_type, message,
-                   current_quantity, minimum_stock, is_resolved, created_at, resolved_at
+                   current_quantity, minimum_stock, is_viewed, is_resolved,
+                   check_date, created_at, viewed_at, resolved_at
             FROM inventory_alerts
             WHERE is_resolved = 0
             ORDER BY created_at DESC
             """
         )
         return [self._map_alert_entity(row) for row in result.rows]
+
+    def get_all_alerts(self) -> List[InventoryAlert]:
+        result = self.client.execute(
+            """
+            SELECT id, inventory_item_id, order_id, alert_type, message,
+                   current_quantity, minimum_stock, is_viewed, is_resolved,
+                   check_date, created_at, viewed_at, resolved_at
+            FROM inventory_alerts
+            ORDER BY created_at DESC
+            """
+        )
+        return [self._map_alert_entity(row) for row in result.rows]
+
+    def mark_alert_as_viewed(self, alert_id: str) -> Optional[InventoryAlert]:
+        existing = self._get_alert_by_id(alert_id)
+        if not existing:
+            return None
+
+        if not existing.is_viewed:
+            self.client.execute(
+                """
+                UPDATE inventory_alerts
+                SET is_viewed = 1,
+                    viewed_at = ?
+                WHERE id = ?
+                """,
+                [datetime.now().isoformat(), alert_id],
+            )
+
+        return self._get_alert_by_id(alert_id)
+
+    def mark_alert_as_resolved(self, alert_id: str) -> Optional[InventoryAlert]:
+        existing = self._get_alert_by_id(alert_id)
+        if not existing:
+            return None
+
+        now_iso = datetime.now().isoformat()
+        self.client.execute(
+            """
+            UPDATE inventory_alerts
+            SET is_resolved = 1,
+                resolved_at = ?,
+                is_viewed = 1,
+                viewed_at = COALESCE(viewed_at, ?)
+            WHERE id = ?
+            """,
+            [now_iso, now_iso, alert_id],
+        )
+        return self._get_alert_by_id(alert_id)
+
+    def create_daily_low_stock_alerts(self, check_date: str) -> int:
+        low_stock_items = self.client.execute(
+            """
+            SELECT id, name, current_quantity, minimum_stock, unit
+            FROM inventory_items
+            WHERE current_quantity <= minimum_stock
+            """
+        )
+
+        created_count = 0
+        for row in low_stock_items.rows:
+            item_id = row[0]
+            item_name = row[1]
+            current_quantity = row[2]
+            minimum_stock = row[3]
+            unit = row[4]
+
+            existing_daily = self.client.execute(
+                """
+                SELECT COUNT(*)
+                FROM inventory_alerts
+                WHERE inventory_item_id = ?
+                  AND alert_type = 'DAILY_MIN_STOCK'
+                  AND check_date = ?
+                """,
+                [item_id, check_date],
+            )
+            if existing_daily.rows[0][0] > 0:
+                continue
+
+            self.create_alert(
+                InventoryAlert(
+                    id=str(uuid.uuid4()),
+                    inventory_item_id=item_id,
+                    order_id=None,
+                    alert_type="DAILY_MIN_STOCK",
+                    message=(
+                        f"Verificacion diaria: '{item_name}' en stock minimo o por debajo "
+                        f"(actual: {current_quantity} {unit}, minimo: {minimum_stock} {unit})"
+                    ),
+                    current_quantity=current_quantity,
+                    minimum_stock=minimum_stock,
+                    is_viewed=False,
+                    is_resolved=False,
+                    check_date=check_date,
+                    created_at=datetime.now(),
+                    viewed_at=None,
+                    resolved_at=None,
+                )
+            )
+            created_count += 1
+
+        return created_count
 
     def is_order_inventory_processed(self, order_id: str) -> bool:
         result = self.client.execute(
@@ -197,7 +305,25 @@ class InventoryRepository(IInventoryRepository):
             message=row[4],
             current_quantity=row[5],
             minimum_stock=row[6],
-            is_resolved=bool(row[7]),
-            created_at=datetime.fromisoformat(row[8]) if isinstance(row[8], str) else row[8],
-            resolved_at=datetime.fromisoformat(row[9]) if isinstance(row[9], str) and row[9] else row[9],
+            is_viewed=bool(row[7]),
+            is_resolved=bool(row[8]),
+            check_date=row[9],
+            created_at=datetime.fromisoformat(row[10]) if isinstance(row[10], str) else row[10],
+            viewed_at=datetime.fromisoformat(row[11]) if isinstance(row[11], str) and row[11] else row[11],
+            resolved_at=datetime.fromisoformat(row[12]) if isinstance(row[12], str) and row[12] else row[12],
         )
+
+    def _get_alert_by_id(self, alert_id: str) -> Optional[InventoryAlert]:
+        result = self.client.execute(
+            """
+            SELECT id, inventory_item_id, order_id, alert_type, message,
+                   current_quantity, minimum_stock, is_viewed, is_resolved,
+                   check_date, created_at, viewed_at, resolved_at
+            FROM inventory_alerts
+            WHERE id = ?
+            """,
+            [alert_id],
+        )
+        if not result.rows:
+            return None
+        return self._map_alert_entity(result.rows[0])

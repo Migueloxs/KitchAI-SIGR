@@ -28,17 +28,28 @@ Cuando un pedido se confirma (transicion `pending` -> `preparing`), el sistema d
 - `PUT /api/orders/{order_id}/status` (confirmacion operativa del pedido)
 - `GET /api/inventory/{item_id}` (verificar stock actualizado)
 - `GET /api/inventory/alerts` (consultar alertas internas activas)
+- `GET /api/inventory/alerts/dashboard` (dashboard de alertas activas e historicas)
+- `PUT /api/inventory/alerts/{alert_id}/view` (marcar alerta como vista)
+- `PUT /api/inventory/alerts/{alert_id}/resolve` (marcar alerta como resuelta)
+- `POST /api/inventory/alerts/daily-check` (ejecutar verificacion diaria manual)
 
 ## Migracion de Base de Datos
 
 Se agrega la migracion:
 
 - `002_inventory_order_auto_update.sql`
+- `004_inventory_alerts_dashboard_and_daily_checks.sql`
 
 Tablas nuevas:
 
 - `order_inventory_updates`: evita descuentos duplicados por pedido.
 - `inventory_alerts`: almacena alertas internas de bajo stock.
+
+Nuevas columnas en `inventory_alerts`:
+
+- `is_viewed`
+- `check_date`
+- `viewed_at`
 
 ## Prueba
 

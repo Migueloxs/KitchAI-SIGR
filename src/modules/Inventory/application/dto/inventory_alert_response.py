@@ -12,6 +12,9 @@ class InventoryAlertResponseDTO(BaseModel):
     message: str
     current_quantity: float
     minimum_stock: float
+    is_viewed: bool
     is_resolved: bool
+    check_date: Optional[str] = None
     created_at: datetime
+    viewed_at: Optional[datetime] = None
     resolved_at: Optional[datetime] = None

@@ -77,6 +77,26 @@ class InventoryService:
         alerts = self.repo.get_active_alerts()
         return [self._to_alert_response_dto(alert) for alert in alerts]
 
+    def get_all_alerts(self) -> List[InventoryAlertResponseDTO]:
+        alerts = self.repo.get_all_alerts()
+        return [self._to_alert_response_dto(alert) for alert in alerts]
+
+    def mark_alert_as_viewed(self, alert_id: str) -> InventoryAlertResponseDTO:
+        alert = self.repo.mark_alert_as_viewed(alert_id)
+        if not alert:
+            raise ValueError(f"Alerta con ID {alert_id} no encontrada")
+        return self._to_alert_response_dto(alert)
+
+    def mark_alert_as_resolved(self, alert_id: str) -> InventoryAlertResponseDTO:
+        alert = self.repo.mark_alert_as_resolved(alert_id)
+        if not alert:
+            raise ValueError(f"Alerta con ID {alert_id} no encontrada")
+        return self._to_alert_response_dto(alert)
+
+    def run_daily_low_stock_check(self, check_date: Optional[str] = None) -> int:
+        date_to_use = check_date or datetime.now().date().isoformat()
+        return self.repo.create_daily_low_stock_alerts(check_date=date_to_use)
+
     def _to_response_dto(self, item: InventoryItem) -> InventoryItemResponseDTO:
         return InventoryItemResponseDTO(
             id=item.id,
@@ -99,7 +119,10 @@ class InventoryService:
             message=alert.message,
             current_quantity=alert.current_quantity,
             minimum_stock=alert.minimum_stock,
+            is_viewed=alert.is_viewed,
             is_resolved=alert.is_resolved,
+            check_date=alert.check_date,
             created_at=alert.created_at,
+            viewed_at=alert.viewed_at,
             resolved_at=alert.resolved_at,
         )
