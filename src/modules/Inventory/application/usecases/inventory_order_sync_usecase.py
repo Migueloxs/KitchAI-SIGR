@@ -41,8 +41,11 @@ class InventoryOrderSyncService:
                     ),
                     current_quantity=updated_item.current_quantity,
                     minimum_stock=updated_item.minimum_stock,
+                    is_viewed=False,
                     is_resolved=False,
+                    check_date=None,
                     created_at=datetime.now(),
+                    viewed_at=None,
                     resolved_at=None,
                 )
                 self.repo.create_alert(alert)

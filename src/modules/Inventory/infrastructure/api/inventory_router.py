@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.modules.Inventory.application.dto.inventory_request import (
     CreateInventoryItemRequestDTO,
@@ -47,6 +47,47 @@ def list_inventory_alerts(user=Depends(get_current_user)):
     _require_admin(user)
     service = InventoryService()
     return service.get_active_alerts()
+
+
+@inventory_router.get("/alerts/dashboard", response_model=List[InventoryAlertResponseDTO])
+def list_inventory_alerts_dashboard(
+    only_active: bool = Query(default=False, description="Si es true, solo retorna alertas no resueltas"),
+    user=Depends(get_current_user),
+):
+    _require_admin(user)
+    service = InventoryService()
+    return service.get_active_alerts() if only_active else service.get_all_alerts()
+
+
+@inventory_router.put("/alerts/{alert_id}/view", response_model=InventoryAlertResponseDTO)
+def mark_inventory_alert_as_viewed(alert_id: str, user=Depends(get_current_user)):
+    _require_admin(user)
+    service = InventoryService()
+    try:
+        return service.mark_alert_as_viewed(alert_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@inventory_router.put("/alerts/{alert_id}/resolve", response_model=InventoryAlertResponseDTO)
+def mark_inventory_alert_as_resolved(alert_id: str, user=Depends(get_current_user)):
+    _require_admin(user)
+    service = InventoryService()
+    try:
+        return service.mark_alert_as_resolved(alert_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@inventory_router.post("/alerts/daily-check", status_code=status.HTTP_200_OK)
+def run_daily_stock_alert_check(user=Depends(get_current_user)):
+    _require_admin(user)
+    service = InventoryService()
+    created_count = service.run_daily_low_stock_check()
+    return {
+        "message": "Verificacion diaria de stock ejecutada",
+        "alerts_created": created_count,
+    }
 
 
 @inventory_router.get("/{item_id}", response_model=InventoryItemResponseDTO)

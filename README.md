@@ -104,7 +104,11 @@ La aplicación estará disponible en: http://localhost:8000
 - `GET /docs` - Documentación interactiva (Swagger)
 - `POST /api/inventory/` - Crear artículo de inventario (admin)
 - `GET /api/inventory/` - Listar artículos de inventario (admin)
-- `GET /api/inventory/alerts` - Listar alertas internas de inventario (admin)
+- `GET /api/inventory/alerts` - Listar alertas internas activas (admin)
+- `GET /api/inventory/alerts/dashboard` - Dashboard de alertas de inventario (admin)
+- `PUT /api/inventory/alerts/{alert_id}/view` - Marcar alerta como vista (admin)
+- `PUT /api/inventory/alerts/{alert_id}/resolve` - Marcar alerta como resuelta (admin)
+- `POST /api/inventory/alerts/daily-check` - Ejecutar chequeo diario manual de stock mínimo (admin)
 - `GET /api/inventory/{item_id}` - Obtener artículo por ID (admin)
 - `PUT /api/inventory/{item_id}` - Actualizar artículo (admin)
 - `DELETE /api/inventory/{item_id}` - Eliminar artículo (admin)
@@ -131,6 +135,7 @@ El proyecto sigue los principios de la arquitectura hexagonal (puertos y adaptad
 - [Configuración de Turso DB](docs/TURSO_DB_SETUP.md) - Guía completa de uso de Turso
 - [Gestión de Inventario](docs/INVENTORY_GUIDE.md) - CRUD de inventario, seguridad y migraciones
 - [Auto-actualización de inventario tras pedidos](docs/INVENTORY_AUTO_UPDATE_GUIDE.md) - Descuentos automáticos y alertas internas
+- [Alertas de stock mínimo y notificaciones](docs/INVENTORY_MIN_STOCK_ALERTS_GUIDE.md) - Dashboard y gestión de alertas vistas/resueltas
 
 ## 🧪 Pruebas
 
@@ -150,6 +155,12 @@ Para probar actualización automática tras confirmar pedidos:
 
 ```bash
 .\.venv\Scripts\python.exe test_inventory_auto_update.py
+```
+
+Para probar alertas de stock mínimo, dashboard y estados de alerta:
+
+```bash
+.\.venv\Scripts\python.exe test_inventory_min_stock_alerts.py
 ```
 
 ## 🔒 Seguridad

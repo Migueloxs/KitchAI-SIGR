@@ -43,6 +43,22 @@ class IInventoryRepository(ABC):
         pass
 
     @abstractmethod
+    def get_all_alerts(self) -> List[InventoryAlert]:
+        pass
+
+    @abstractmethod
+    def mark_alert_as_viewed(self, alert_id: str) -> Optional[InventoryAlert]:
+        pass
+
+    @abstractmethod
+    def mark_alert_as_resolved(self, alert_id: str) -> Optional[InventoryAlert]:
+        pass
+
+    @abstractmethod
+    def create_daily_low_stock_alerts(self, check_date: str) -> int:
+        pass
+
+    @abstractmethod
     def is_order_inventory_processed(self, order_id: str) -> bool:
         pass
 

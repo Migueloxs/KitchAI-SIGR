@@ -1,6 +1,10 @@
+import asyncio
+from datetime import datetime
+
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, JSONResponse
 
+from src.modules.Inventory.application.usecases.inventory_usecases import InventoryService
 from src.shared.infrastructure.database.turso_connection import turso_db
 from src.shared.infrastructure.database.migrations.migration_runner import run_migrations
 from src.modules.User.infrastructure.api.auth_router import router as auth_router
@@ -79,6 +83,8 @@ app.include_router(roles_router)
 app.include_router(order_router)
 app.include_router(inventory_router)
 
+inventory_daily_check_task: asyncio.Task | None = None
+
 
 def _ensure_table_columns(table_name: str, required_columns: dict[str, str]) -> None:
     """Asegura columnas necesarias en tablas legacy sin romper entornos ya migrados."""
@@ -130,9 +136,36 @@ def _ensure_orders_compatibility_schema() -> None:
     )
 
 
+def _ensure_inventory_alerts_compatibility_schema() -> None:
+    """Mantiene compatibilidad con esquemas antiguos de alertas de inventario."""
+    _ensure_table_columns(
+        "inventory_alerts",
+        {
+            "is_viewed": "INTEGER NOT NULL DEFAULT 0",
+            "check_date": "TEXT",
+            "viewed_at": "TEXT",
+        },
+    )
+
+
+async def _run_daily_inventory_low_stock_check() -> None:
+    """Ejecuta verificacion diaria de stock minimo y crea alertas internas."""
+    service = InventoryService()
+    while True:
+        try:
+            check_date = datetime.now().date().isoformat()
+            created = service.run_daily_low_stock_check(check_date=check_date)
+            print(f"🔎 Verificacion diaria de stock ejecutada ({check_date}). Alertas creadas: {created}")
+        except Exception as e:
+            print(f"⚠️  Error en verificacion diaria de stock: {e}")
+
+        await asyncio.sleep(60 * 60 * 24)
+
+
 @app.on_event("startup")
 async def startup_event():
     """Evento que se ejecuta al iniciar la aplicación."""
+    global inventory_daily_check_task
     print("🚀 Iniciando KitchAI...")
     # La conexión ya se inicializa automáticamente con el import
     # Asegurar que los roles básicos existan en la base de datos.
@@ -140,6 +173,7 @@ async def startup_event():
         # Ejecutar migraciones versionadas
         run_migrations(turso_db)
         _ensure_orders_compatibility_schema()
+        _ensure_inventory_alerts_compatibility_schema()
 
         # el método execute de turso_db permite SQL directa
         turso_db.execute(
@@ -221,6 +255,9 @@ async def startup_event():
                 [rid, roleid, permid]
             )
         print("✅ Asociaciones rol-permiso creadas")
+
+        inventory_daily_check_task = asyncio.create_task(_run_daily_inventory_low_stock_check())
+        print("✅ Scheduler de verificacion diaria de stock inicializado")
     except Exception as e:
         print(f"⚠️  Error al inicializar roles: {e}")
 
@@ -228,7 +265,14 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Evento que se ejecuta al cerrar la aplicación."""
+    global inventory_daily_check_task
     print("👋 Cerrando KitchAI...")
+    if inventory_daily_check_task:
+        inventory_daily_check_task.cancel()
+        try:
+            await inventory_daily_check_task
+        except asyncio.CancelledError:
+            pass
     turso_db.close()
 
 
