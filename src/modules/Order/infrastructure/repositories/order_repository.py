@@ -1,6 +1,6 @@
 from typing import List, Optional
 from src.modules.Order.domain.repositories.order_repository_interface import IOrderRepository
-from src.modules.Order.domain.entities.order import Order, OrderStatus
+from src.modules.Order.domain.entities.order import Order, OrderStatus, ServiceType
 from src.modules.Order.domain.entities.order_item import OrderItem
 from src.shared.infrastructure.database.turso_connection import get_turso_client
 from datetime import datetime
@@ -14,13 +14,13 @@ class OrderRepository(IOrderRepository):
         self.db.execute("""
             INSERT INTO orders (
                 id, order_number, customer_name, customer_phone, table_number,
-                status, total_amount, tax_amount, discount_amount, final_amount,
+                status, service_type, total_amount, tax_amount, discount_amount, final_amount,
                 payment_status, payment_method, special_instructions, waiter_id,
                 created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, [
             order.id, order.order_number, order.customer_name, order.customer_phone,
-            order.table_number, order.status.value, order.total_amount, order.tax_amount,
+            order.table_number, order.status.value, order.service_type.value, order.total_amount, order.tax_amount,
             order.discount_amount, order.final_amount, order.payment_status,
             order.payment_method, order.special_instructions, order.waiter_id,
             order.created_at.isoformat(), order.updated_at.isoformat()
@@ -45,7 +45,7 @@ class OrderRepository(IOrderRepository):
         # Obtener pedido
         order_result = self.db.execute("""
             SELECT id, order_number, customer_name, customer_phone, table_number,
-                   status, total_amount, tax_amount, discount_amount, final_amount,
+                   status, service_type, total_amount, tax_amount, discount_amount, final_amount,
                    payment_status, payment_method, special_instructions, waiter_id,
                    cancelled_by, cancelled_at, cancellation_reason,
                    created_at, updated_at, preparation_started_at, ready_at,
@@ -89,31 +89,32 @@ class OrderRepository(IOrderRepository):
             customer_phone=order_result[3],
             table_number=order_result[4],
             status=OrderStatus(order_result[5]),
-            total_amount=order_result[6],
-            tax_amount=order_result[7],
-            discount_amount=order_result[8],
-            final_amount=order_result[9],
-            payment_status=order_result[10],
-            payment_method=order_result[11],
-            special_instructions=order_result[12],
-            waiter_id=order_result[13],
-            cancelled_by=order_result[14],
-            cancelled_at=parse_datetime(order_result[15]),
-            cancellation_reason=order_result[16],
-            created_at=parse_datetime(order_result[17]),
-            updated_at=parse_datetime(order_result[18]),
-            preparation_started_at=parse_datetime(order_result[19]),
-            ready_at=parse_datetime(order_result[20]),
-            completed_at=parse_datetime(order_result[21]),
-            preparation_time=order_result[22],
-            total_time=order_result[23],
+            service_type=ServiceType(order_result[6]),
+            total_amount=order_result[7],
+            tax_amount=order_result[8],
+            discount_amount=order_result[9],
+            final_amount=order_result[10],
+            payment_status=order_result[11],
+            payment_method=order_result[12],
+            special_instructions=order_result[13],
+            waiter_id=order_result[14],
+            cancelled_by=order_result[15],
+            cancelled_at=parse_datetime(order_result[16]),
+            cancellation_reason=order_result[17],
+            created_at=parse_datetime(order_result[18]),
+            updated_at=parse_datetime(order_result[19]),
+            preparation_started_at=parse_datetime(order_result[20]),
+            ready_at=parse_datetime(order_result[21]),
+            completed_at=parse_datetime(order_result[22]),
+            preparation_time=order_result[23],
+            total_time=order_result[24],
             items=items
         )
 
     def get_all(self, waiter_id: Optional[str] = None) -> List[Order]:
         query = """
             SELECT id, order_number, customer_name, customer_phone, table_number,
-                   status, total_amount, tax_amount, discount_amount, final_amount,
+                   status, service_type, total_amount, tax_amount, discount_amount, final_amount,
                    payment_status, payment_method, special_instructions, waiter_id,
                    cancelled_by, cancelled_at, cancellation_reason,
                    created_at, updated_at, preparation_started_at, ready_at,
@@ -163,24 +164,25 @@ class OrderRepository(IOrderRepository):
                 customer_phone=row[3],
                 table_number=row[4],
                 status=OrderStatus(row[5]),
-                total_amount=row[6],
-                tax_amount=row[7],
-                discount_amount=row[8],
-                final_amount=row[9],
-                payment_status=row[10],
-                payment_method=row[11],
-                special_instructions=row[12],
-                waiter_id=row[13],
-                cancelled_by=row[14],
-                cancelled_at=parse_datetime(row[15]),
-                cancellation_reason=row[16],
-                created_at=parse_datetime(row[17]),
-                updated_at=parse_datetime(row[18]),
-                preparation_started_at=parse_datetime(row[19]),
-                ready_at=parse_datetime(row[20]),
-                completed_at=parse_datetime(row[21]),
-                preparation_time=row[22],
-                total_time=row[23],
+                service_type=ServiceType(row[6]),
+                total_amount=row[7],
+                tax_amount=row[8],
+                discount_amount=row[9],
+                final_amount=row[10],
+                payment_status=row[11],
+                payment_method=row[12],
+                special_instructions=row[13],
+                waiter_id=row[14],
+                cancelled_by=row[15],
+                cancelled_at=parse_datetime(row[16]),
+                cancellation_reason=row[17],
+                created_at=parse_datetime(row[18]),
+                updated_at=parse_datetime(row[19]),
+                preparation_started_at=parse_datetime(row[20]),
+                ready_at=parse_datetime(row[21]),
+                completed_at=parse_datetime(row[22]),
+                preparation_time=row[23],
+                total_time=row[24],
                 items=items
             ))
 
