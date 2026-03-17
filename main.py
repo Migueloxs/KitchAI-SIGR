@@ -2,9 +2,11 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from src.shared.infrastructure.database.turso_connection import turso_db
+from src.shared.infrastructure.database.migrations.migration_runner import run_migrations
 from src.modules.User.infrastructure.api.auth_router import router as auth_router
 from src.modules.User.infrastructure.api.roles_router import router as roles_router
 from src.modules.Order.infrastructure.api.order_router import order_router
+from src.modules.Inventory.infrastructure.api.inventory_router import inventory_router
 
 # Configuración de la aplicación con metadata para Swagger/OpenAPI
 app = FastAPI(
@@ -63,6 +65,10 @@ app = FastAPI(
         {
             "name": "Salud",
             "description": "Endpoints para verificar el estado del sistema"
+        },
+        {
+            "name": "Inventario",
+            "description": "CRUD de articulos de inventario"
         }
     ]
 )
@@ -71,6 +77,7 @@ app = FastAPI(
 app.include_router(auth_router)
 app.include_router(roles_router)
 app.include_router(order_router)
+app.include_router(inventory_router)
 
 
 @app.on_event("startup")
@@ -80,6 +87,9 @@ async def startup_event():
     # La conexión ya se inicializa automáticamente con el import
     # Asegurar que los roles básicos existan en la base de datos.
     try:
+        # Ejecutar migraciones versionadas
+        run_migrations(turso_db)
+
         # el método execute de turso_db permite SQL directa
         turso_db.execute(
             """
