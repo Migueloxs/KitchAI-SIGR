@@ -102,6 +102,11 @@ La aplicación estará disponible en: http://localhost:8000
 - `GET /` - Página de bienvenida
 - `GET /health` - Verificar estado de la aplicación y base de datos
 - `GET /docs` - Documentación interactiva (Swagger)
+- `POST /api/inventory/` - Crear artículo de inventario (admin)
+- `GET /api/inventory/` - Listar artículos de inventario (admin)
+- `GET /api/inventory/{item_id}` - Obtener artículo por ID (admin)
+- `PUT /api/inventory/{item_id}` - Actualizar artículo (admin)
+- `DELETE /api/inventory/{item_id}` - Eliminar artículo (admin)
 
 ## 🏗️ Arquitectura Hexagonal
 
@@ -123,6 +128,7 @@ El proyecto sigue los principios de la arquitectura hexagonal (puertos y adaptad
 ## 📚 Documentación Adicional
 
 - [Configuración de Turso DB](docs/TURSO_DB_SETUP.md) - Guía completa de uso de Turso
+- [Gestión de Inventario](docs/INVENTORY_GUIDE.md) - CRUD de inventario, seguridad y migraciones
 
 ## 🧪 Pruebas
 
@@ -130,6 +136,12 @@ Para probar la conexión a Turso DB:
 
 ```bash
 .\.venv\Scripts\python.exe test_turso_connection.py
+```
+
+Para probar CRUD de inventario:
+
+```bash
+.\.venv\Scripts\python.exe test_inventory_crud.py
 ```
 
 ## 🔒 Seguridad
