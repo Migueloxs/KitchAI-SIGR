@@ -99,6 +99,19 @@ class OrderService:
 
         # Guardar en la base de datos
         saved_order = self.repo.update_status_with_details(updated_order)
+
+        # CA1 y CA2 y CA3: Registrar automáticamente la venta cuando el pedido se complete
+        # (SERVED para dine_in o DELIVERED para takeout/delivery)
+        if new_status in [OrderStatus.SERVED, OrderStatus.DELIVERED] and new_status != order.status:
+            try:
+                # Import lazy para evitar circular dependency
+                from src.modules.Sales.application.usecases.sales_usecases import SalesService
+                sales_service = SalesService()
+                sales_service.register_sale_from_order(saved_order)
+            except Exception as e:
+                # Log the error pero no fallar la transición de estado
+                print(f"Error al registrar venta para pedido {order_id}: {str(e)}")
+
         return self._to_response_dto(saved_order)
 
     def get_order_by_id(self, order_id: str) -> Optional[OrderResponseDTO]:

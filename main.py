@@ -11,6 +11,7 @@ from src.modules.User.infrastructure.api.auth_router import router as auth_route
 from src.modules.User.infrastructure.api.roles_router import router as roles_router
 from src.modules.Order.infrastructure.api.order_router import order_router
 from src.modules.Inventory.infrastructure.api.inventory_router import inventory_router
+from src.modules.Sales.infrastructure.api.sales_router import sales_router
 
 # Configuración de la aplicación con metadata para Swagger/OpenAPI
 app = FastAPI(
@@ -73,6 +74,10 @@ app = FastAPI(
         {
             "name": "Inventario",
             "description": "CRUD de articulos de inventario"
+        },
+        {
+            "name": "Ventas y Reportes",
+            "description": "Registro automático de ventas y generación de reportes financieros"
         }
     ]
 )
@@ -82,6 +87,7 @@ app.include_router(auth_router)
 app.include_router(roles_router)
 app.include_router(order_router)
 app.include_router(inventory_router)
+app.include_router(sales_router)
 
 inventory_daily_check_task: asyncio.Task | None = None
 
