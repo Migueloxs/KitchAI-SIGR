@@ -1,0 +1,1 @@
+"""Domain Layer - Sales Module"""

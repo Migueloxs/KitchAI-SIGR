@@ -112,6 +112,13 @@ La aplicación estará disponible en: http://localhost:8000
 - `GET /api/inventory/{item_id}` - Obtener artículo por ID (admin)
 - `PUT /api/inventory/{item_id}` - Actualizar artículo (admin)
 - `DELETE /api/inventory/{item_id}` - Eliminar artículo (admin)
+- **Ventas y Reportes** (Nuevo):
+  - `GET /api/sales/` - Listar todas las ventas (admin)
+  - `GET /api/sales/{sale_id}` - Obtener venta específica (admin)
+  - `GET /api/sales/by-date-range/` - Ventas por rango de fechas (admin)
+  - `GET /api/sales/by-waiter/{waiter_id}` - Ventas de un mesero (admin)
+  - `GET /api/sales/report/daily/` - Reporte diario (admin, employee)
+  - `GET /api/sales/report/period/` - Reporte de período (admin, employee)
 
 ## 🏗️ Arquitectura Hexagonal
 
@@ -136,6 +143,7 @@ El proyecto sigue los principios de la arquitectura hexagonal (puertos y adaptad
 - [Gestión de Inventario](docs/INVENTORY_GUIDE.md) - CRUD de inventario, seguridad y migraciones
 - [Auto-actualización de inventario tras pedidos](docs/INVENTORY_AUTO_UPDATE_GUIDE.md) - Descuentos automáticos y alertas internas
 - [Alertas de stock mínimo y notificaciones](docs/INVENTORY_MIN_STOCK_ALERTS_GUIDE.md) - Dashboard y gestión de alertas vistas/resueltas
+- [Ventas y Reportes](docs/SALES_GUIDE.md) - Registro automático de ventas, reportes financieros y análisis
 
 ## 🧪 Pruebas
 
