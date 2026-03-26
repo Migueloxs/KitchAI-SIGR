@@ -48,7 +48,8 @@ class Settings:
         if self.is_development and not self.JWT_SECRET_KEY:
             import secrets
             self.JWT_SECRET_KEY = secrets.token_urlsafe(32)
-            print("⚠️  JWT_SECRET_KEY no configurado. Usando clave temporal para desarrollo.")
+            print("[WARNING] JWT_SECRET_KEY no configurado. Usando clave temporal para desarrollo.")
+
     
     @property
     def is_production(self) -> bool:

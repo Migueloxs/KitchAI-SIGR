@@ -13,6 +13,7 @@ from src.modules.Order.infrastructure.api.order_router import order_router
 from src.modules.Inventory.infrastructure.api.inventory_router import inventory_router
 from src.modules.Sales.infrastructure.api.sales_router import sales_router
 from src.modules.Finances.infrastructure.api.finances_router import finances_router
+from src.modules.Shifts.infrastructure.api.shifts_router import shifts_router
 
 # Configuración de la aplicación con metadata para Swagger/OpenAPI
 app = FastAPI(
@@ -83,6 +84,10 @@ app = FastAPI(
         {
             "name": "Finanzas",
             "description": "Cálculo automático de ingresos, gastos y ganancias con reportes en tiempo real"
+        },
+        {
+            "name": "Turnos",
+            "description": "Gestión de horarios y turnos de trabajo para empleados"
         }
     ]
 )
@@ -94,6 +99,7 @@ app.include_router(order_router)
 app.include_router(inventory_router)
 app.include_router(sales_router)
 app.include_router(finances_router)
+app.include_router(shifts_router)
 
 inventory_daily_check_task: asyncio.Task | None = None
 
