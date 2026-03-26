@@ -119,6 +119,17 @@ La aplicación estará disponible en: http://localhost:8000
   - `GET /api/sales/by-waiter/{waiter_id}` - Ventas de un mesero (admin)
   - `GET /api/sales/report/daily/` - Reporte diario (admin, employee)
   - `GET /api/sales/report/period/` - Reporte de período (admin, employee)
+- **Finanzas** (Nuevo):
+  - `GET /api/finances/income/daily/` - Ingresos totales del día - CA1 (admin, employee)
+  - `GET /api/finances/income/period/` - Ingresos totales del período - CA1 (admin, employee)
+  - `GET /api/finances/profit/daily/` - Ganancia neta del día - CA2 (admin, employee)
+  - `GET /api/finances/profit/period/` - Ganancia neta del período - CA2 (admin, employee)
+  - `GET /api/finances/report/daily/` - Reporte financiero diario en tiempo real - CA3 (admin, employee)
+  - `GET /api/finances/report/period/` - Reporte financiero de período - CA3 (admin, employee)
+  - `GET /api/finances/report/comprehensive/` - Reporte detallado con desglose por categoría - CA3 (admin)
+  - `POST /api/finances/expenses/` - Crear gasto (admin)
+  - `GET /api/finances/expenses/` - Listar gastos (admin)
+  - `GET /api/finances/expenses/{expense_id}` - Obtener gasto específico (admin)
 
 ## 🏗️ Arquitectura Hexagonal
 
@@ -144,6 +155,7 @@ El proyecto sigue los principios de la arquitectura hexagonal (puertos y adaptad
 - [Auto-actualización de inventario tras pedidos](docs/INVENTORY_AUTO_UPDATE_GUIDE.md) - Descuentos automáticos y alertas internas
 - [Alertas de stock mínimo y notificaciones](docs/INVENTORY_MIN_STOCK_ALERTS_GUIDE.md) - Dashboard y gestión de alertas vistas/resueltas
 - [Ventas y Reportes](docs/SALES_GUIDE.md) - Registro automático de ventas, reportes financieros y análisis
+- [Finanzas - Cálculo Automático de Ingresos, Egresos y Ganancias](docs/FINANCES_GUIDE.md) - CA1, CA2, CA3, endpoints, reportes en tiempo real
 
 ## 🧪 Pruebas
 
