@@ -17,6 +17,21 @@ from src.modules.Finances.application.dto.finance_response import (
     CreateExpenseRequestDTO,
 )
 from src.modules.Sales.infrastructure.repositories.sales_repository import SalesRepository
+from src.modules.Finances.infrastructure.repositories.financial_reports_repository import (
+    FinancialReportsRepository,
+)
+from src.modules.Finances.application.dto.financial_reports_dto import (
+    DetailedFinancialReportDTO,
+    FinancialMetricsDTO,
+    PaymentMethodSummary,
+    WaiterPerformanceDTO,
+    SaleItemDetailDTO,
+    ItemBreakdownDTO,
+    FilteredSalesReportDTO,
+    CategoryProductSummary,
+    FinancialComparisonReportDTO,
+    ComparisonPeriodDTO,
+)
 from src.shared.infrastructure.database.turso_connection import get_turso_client
 
 
@@ -26,6 +41,7 @@ class FinancesService:
     def __init__(self):
         self.repo = FinancesRepository()
         self.sales_repo = SalesRepository()
+        self.reports_repo = FinancialReportsRepository()
         self.client = get_turso_client()
 
     # ==================== EXPENSE MANAGEMENT ====================
@@ -255,3 +271,322 @@ class FinancesService:
             registered_at=expense.registered_at,
             registered_by=expense.registered_by,
         )
+
+    # ==================== CA1: Detailed Sales Reports ====================
+
+    def get_sales_report_by_period(
+        self, start_date: str, end_date: str
+    ) -> FilteredSalesReportDTO:
+        """CA1: Get detailed sales report filtered by date"""
+        sales_data = self.reports_repo.get_sales_with_items(start_date, end_date)
+        
+        total_sales = len(sales_data)
+        total_amount = sum(s["final_amount"] for s in sales_data)
+        average_amount = total_amount / total_sales if total_sales > 0 else 0.0
+
+        sales_detail = [
+            SaleItemDetailDTO(
+                id=s["id"],
+                order_number=s["order_number"],
+                customer_name=s["customer_name"],
+                waiter_name=s["waiter_name"],
+                payment_method=s["payment_method"],
+                total_amount=s["total_amount"],
+                final_amount=s["final_amount"],
+                sale_date=s["sale_date"],
+                items=[
+                    ItemBreakdownDTO(
+                        menu_item_name=item["menu_item_name"],
+                        quantity=item["quantity"],
+                        unit_price=item["unit_price"],
+                        subtotal=item["subtotal"],
+                        percentage_of_total=round((item["subtotal"] / s["final_amount"]) * 100, 2) if s["final_amount"] > 0 else 0.0,
+                    )
+                    for item in s["items"]
+                ],
+            )
+            for s in sales_data
+        ]
+
+        return FilteredSalesReportDTO(
+            period_start=start_date,
+            period_end=end_date,
+            total_sales=total_sales,
+            total_amount=round(total_amount, 2),
+            average_amount=round(average_amount, 2),
+            sales_list=sales_detail,
+            applied_filters={"date_range": f"{start_date} to {end_date}"},
+        )
+
+    # ==================== CA2: Filtered Reports ====================
+
+    def get_sales_report_by_payment_method(
+        self, start_date: str, end_date: str, payment_method: str
+    ) -> FilteredSalesReportDTO:
+        """CA2: Get sales report filtered by payment method"""
+        sales_data = self.reports_repo.get_sales_by_payment_method(
+            start_date, end_date, payment_method
+        )
+
+        total_sales = len(sales_data)
+        total_amount = sum(s["final_amount"] for s in sales_data)
+        average_amount = total_amount / total_sales if total_sales > 0 else 0.0
+
+        sales_detail = [
+            SaleItemDetailDTO(
+                id=s["id"],
+                order_number=s["order_number"],
+                customer_name=s["customer_name"],
+                waiter_name=self.reports_repo._get_waiter_name(s["waiter_id"]),
+                payment_method=s["payment_method"],
+                total_amount=s["total_amount"],
+                final_amount=s["final_amount"],
+                sale_date=s["sale_date"],
+            )
+            for s in sales_data
+        ]
+
+        return FilteredSalesReportDTO(
+            period_start=start_date,
+            period_end=end_date,
+            total_sales=total_sales,
+            total_amount=round(total_amount, 2),
+            average_amount=round(average_amount, 2),
+            sales_list=sales_detail,
+            applied_filters={"payment_method": payment_method},
+        )
+
+    def get_sales_report_by_waiter(
+        self, start_date: str, end_date: str, waiter_id: str
+    ) -> FilteredSalesReportDTO:
+        """CA2: Get sales report filtered by employee"""
+        sales_data = self.reports_repo.get_sales_by_waiter(start_date, end_date, waiter_id)
+
+        total_sales = len(sales_data)
+        total_amount = sum(s["final_amount"] for s in sales_data)
+        average_amount = total_amount / total_sales if total_sales > 0 else 0.0
+        waiter_name = self.reports_repo._get_waiter_name(waiter_id)
+
+        sales_detail = [
+            SaleItemDetailDTO(
+                id=s["id"],
+                order_number=s["order_number"],
+                customer_name=s["customer_name"],
+                waiter_name=waiter_name,
+                payment_method=s["payment_method"],
+                total_amount=s["total_amount"],
+                final_amount=s["final_amount"],
+                sale_date=s["sale_date"],
+            )
+            for s in sales_data
+        ]
+
+        return FilteredSalesReportDTO(
+            period_start=start_date,
+            period_end=end_date,
+            total_sales=total_sales,
+            total_amount=round(total_amount, 2),
+            average_amount=round(average_amount, 2),
+            sales_list=sales_detail,
+            applied_filters={"waiter_id": waiter_id, "waiter_name": waiter_name},
+        )
+
+    # ==================== CA3: Comprehensive Reports with Metadata ====================
+
+    def get_detailed_financial_report(
+        self, start_date: str, end_date: str
+    ) -> DetailedFinancialReportDTO:
+        """CA3: Get comprehensive financial report with metrics and breakdowns"""
+        
+        # Get base metrics
+        metrics_data = self.reports_repo.get_financial_metrics(start_date, end_date)
+        expenses = self.repo.get_total_expenses_by_period(start_date, end_date)
+        net_profit = metrics_data["total_revenue"] - expenses
+
+        metrics = FinancialMetricsDTO(
+            period_start=start_date,
+            period_end=end_date,
+            total_sales=metrics_data["total_sales"],
+            total_revenue=round(metrics_data["total_revenue"], 2),
+            total_tax=round(metrics_data["total_tax"], 2),
+            total_discount=round(metrics_data["total_discount"], 2),
+            total_expenses=round(expenses, 2),
+            net_profit=round(net_profit, 2),
+            profit_margin_percent=round((net_profit / metrics_data["total_revenue"] * 100) if metrics_data["total_revenue"] > 0 else 0, 2),
+            average_ticket=round(metrics_data["average_ticket"], 2),
+            average_discount_percent=round(metrics_data["average_discount_percent"], 2),
+        )
+
+        # Payment method summary
+        payment_methods_data = self.reports_repo.get_payment_method_summary(start_date, end_date)
+        by_payment_method = [
+            PaymentMethodSummary(
+                method=data["method"],
+                count=data["count"],
+                total_amount=round(data["total_amount"], 2),
+                average_amount=round(data["average_amount"], 2),
+                percentage=round((data["total_amount"] / metrics_data["total_revenue"] * 100) if metrics_data["total_revenue"] > 0 else 0, 2),
+            )
+            for data in payment_methods_data.values()
+        ]
+
+        # Waiter performance
+        waiters_data = self.reports_repo.get_waiter_performance_summary(start_date, end_date)
+        by_waiter = [
+            WaiterPerformanceDTO(
+                waiter_id=data["waiter_id"],
+                waiter_name=data["waiter_name"],
+                sales_count=data["sales_count"],
+                total_sales=round(data["total_sales"], 2),
+                average_sale=round(data["average_sale"], 2),
+                percentage_of_total=round((data["total_sales"] / metrics_data["total_revenue"] * 100) if metrics_data["total_revenue"] > 0 else 0, 2),
+            )
+            for data in waiters_data.values()
+        ]
+
+        # Product category summary
+        products_data = self.reports_repo.get_product_category_summary(start_date, end_date)
+        by_product_category = [
+            CategoryProductSummary(
+                category=data["menu_item_name"],
+                items_sold=data["quantity"],
+                total_quantity=data["quantity"],
+                total_amount=round(data["total_amount"], 2),
+                percentage=round((data["total_amount"] / metrics_data["total_revenue"] * 100) if metrics_data["total_revenue"] > 0 else 0, 2),
+                most_sold_item=data["menu_item_name"],
+                least_sold_item=data["menu_item_name"],
+            )
+            for data in products_data.values()
+        ]
+
+        # Sales detail
+        sales_data = self.reports_repo.get_sales_with_items(start_date, end_date)
+        sales_detail = [
+            SaleItemDetailDTO(
+                id=s["id"],
+                order_number=s["order_number"],
+                customer_name=s["customer_name"],
+                waiter_name=s["waiter_name"],
+                payment_method=s["payment_method"],
+                total_amount=s["total_amount"],
+                final_amount=s["final_amount"],
+                sale_date=s["sale_date"],
+                items=[
+                    ItemBreakdownDTO(
+                        menu_item_name=item["menu_item_name"],
+                        quantity=item["quantity"],
+                        unit_price=item["unit_price"],
+                        subtotal=item["subtotal"],
+                        percentage_of_total=round((item["subtotal"] / s["final_amount"]) * 100, 2) if s["final_amount"] > 0 else 0.0,
+                    )
+                    for item in s["items"]
+                ],
+            )
+            for s in sales_data
+        ]
+
+        return DetailedFinancialReportDTO(
+            period_start=start_date,
+            period_end=end_date,
+            metrics=metrics,
+            by_payment_method=by_payment_method,
+            by_waiter=by_waiter,
+            by_product_category=by_product_category,
+            sales_detail=sales_detail,
+            filters_applied={"date_range": f"{start_date} to {end_date}"},
+        )
+
+    def get_financial_comparison_report(
+        self, current_start: str, current_end: str, 
+        previous_start: str, previous_end: str
+    ) -> FinancialComparisonReportDTO:
+        """CA3: Get comparative financial report between two periods"""
+        
+        # Current period
+        current_metrics_data = self.reports_repo.get_financial_metrics(current_start, current_end)
+        current_expenses = self.repo.get_total_expenses_by_period(current_start, current_end)
+        current_profit = current_metrics_data["total_revenue"] - current_expenses
+
+        current_metrics = FinancialMetricsDTO(
+            period_start=current_start,
+            period_end=current_end,
+            total_sales=current_metrics_data["total_sales"],
+            total_revenue=round(current_metrics_data["total_revenue"], 2),
+            total_tax=round(current_metrics_data["total_tax"], 2),
+            total_discount=round(current_metrics_data["total_discount"], 2),
+            total_expenses=round(current_expenses, 2),
+            net_profit=round(current_profit, 2),
+            profit_margin_percent=round((current_profit / current_metrics_data["total_revenue"] * 100) if current_metrics_data["total_revenue"] > 0 else 0, 2),
+            average_ticket=round(current_metrics_data["average_ticket"], 2),
+            average_discount_percent=round(current_metrics_data["average_discount_percent"], 2),
+        )
+
+        # Previous period
+        previous_metrics_data = self.reports_repo.get_financial_metrics(previous_start, previous_end)
+        previous_expenses = self.repo.get_total_expenses_by_period(previous_start, previous_end)
+        previous_profit = previous_metrics_data["total_revenue"] - previous_expenses
+
+        previous_metrics = FinancialMetricsDTO(
+            period_start=previous_start,
+            period_end=previous_end,
+            total_sales=previous_metrics_data["total_sales"],
+            total_revenue=round(previous_metrics_data["total_revenue"], 2),
+            total_tax=round(previous_metrics_data["total_tax"], 2),
+            total_discount=round(previous_metrics_data["total_discount"], 2),
+            total_expenses=round(previous_expenses, 2),
+            net_profit=round(previous_profit, 2),
+            profit_margin_percent=round((previous_profit / previous_metrics_data["total_revenue"] * 100) if previous_metrics_data["total_revenue"] > 0 else 0, 2),
+            average_ticket=round(previous_metrics_data["average_ticket"], 2),
+            average_discount_percent=round(previous_metrics_data["average_discount_percent"], 2),
+        )
+
+        # Calculate growth rates
+        revenue_change = current_metrics_data["total_revenue"] - previous_metrics_data["total_revenue"]
+        expense_change = current_expenses - previous_expenses
+        profit_change = current_profit - previous_profit
+        growth_rate = (revenue_change / previous_metrics_data["total_revenue"] * 100) if previous_metrics_data["total_revenue"] > 0 else 0
+
+        comparison = ComparisonPeriodDTO(
+            current_period=current_metrics,
+            previous_period=previous_metrics,
+            growth_rate_percent=round(growth_rate, 2),
+            revenue_change=round(revenue_change, 2),
+            expense_change=round(expense_change, 2),
+            profit_change=round(profit_change, 2),
+        )
+
+        # Generate insights
+        insights = self._generate_insights(comparison)
+
+        return FinancialComparisonReportDTO(
+            comparison=comparison,
+            insights=insights,
+        )
+
+    def _generate_insights(self, comparison: ComparisonPeriodDTO) -> List[str]:
+        """Generate automatic insights from comparison"""
+        insights = []
+
+        if comparison.growth_rate_percent > 10:
+            insights.append(f"📈 Crecimiento fuerte: ingresos aumentaron {comparison.growth_rate_percent}%")
+        elif comparison.growth_rate_percent > 0:
+            insights.append(f"📊 Crecimiento moderado: ingresos aumentaron {comparison.growth_rate_percent}%")
+        elif comparison.growth_rate_percent < -10:
+            insights.append(f"📉 Caída significativa: ingresos disminuyeron {abs(comparison.growth_rate_percent)}%")
+        else:
+            insights.append(f"➡️ Ingresos estables con cambio de {comparison.growth_rate_percent}%")
+
+        if comparison.current_period.profit_margin_percent > comparison.previous_period.profit_margin_percent:
+            margin_diff = comparison.current_period.profit_margin_percent - comparison.previous_period.profit_margin_percent
+            insights.append(f"💰 Margen de ganancia mejoró: +{margin_diff}% (ahora {comparison.current_period.profit_margin_percent}%)")
+        else:
+            margin_diff = comparison.previous_period.profit_margin_percent - comparison.current_period.profit_margin_percent
+            insights.append(f"⚠️ Margen de ganancia disminuyó: -{margin_diff}% (ahora {comparison.current_period.profit_margin_percent}%)")
+
+        if comparison.expense_change > 0:
+            insights.append(f"💸 Gastos aumentaron: +${abs(comparison.expense_change)}")
+        else:
+            insights.append(f"✅ Gastos reducidos: ${abs(comparison.expense_change)}")
+
+        return insights
+

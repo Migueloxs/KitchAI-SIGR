@@ -10,6 +10,11 @@ from src.modules.Finances.application.dto.finance_response import (
     FinancialReportDTO,
     CreateExpenseRequestDTO,
 )
+from src.modules.Finances.application.dto.financial_reports_dto import (
+    DetailedFinancialReportDTO,
+    FilteredSalesReportDTO,
+    FinancialComparisonReportDTO,
+)
 from src.modules.User.infrastructure.api.auth_router import get_current_user
 
 finances_router = APIRouter(prefix="/api/finances", tags=["Finanzas"])
@@ -192,6 +197,113 @@ def get_comprehensive_report(
     
     try:
         return service.get_comprehensive_financial_report(start_date, end_date)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error al generar reporte: {str(e)}",
+        )
+
+
+# ==================== #13: DETAILED FINANCIAL REPORTS ====================
+# CA1: Sales, income and expenses data filtered by date in JSON format
+# CA2: Additional filters (payment method, employee, product category)
+# CA3: Metadata (totals, averages, comparisons with previous periods)
+
+
+@finances_router.get("/reports/sales-by-period/", response_model=FilteredSalesReportDTO)
+def get_sales_report_by_period(
+    start_date: str = Query(..., description="Fecha inicio (YYYY-MM-DD)"),
+    end_date: str = Query(..., description="Fecha fin (YYYY-MM-DD)"),
+    user=Depends(get_current_user),
+):
+    """CA1: Obtener datos detallados de ventas filtrados por fecha"""
+    _require_admin_or_employee(user)
+    service = FinancesService()
+    
+    try:
+        return service.get_sales_report_by_period(start_date, end_date)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error al generar reporte: {str(e)}",
+        )
+
+
+@finances_router.get("/reports/sales-by-payment-method/", response_model=FilteredSalesReportDTO)
+def get_sales_by_payment_method(
+    start_date: str = Query(..., description="Fecha inicio (YYYY-MM-DD)"),
+    end_date: str = Query(..., description="Fecha fin (YYYY-MM-DD)"),
+    payment_method: str = Query(..., description="Método de pago (Efectivo, Tarjeta, etc)"),
+    user=Depends(get_current_user),
+):
+    """CA2: Obtener ventas filtrado por método de pago"""
+    _require_admin_or_employee(user)
+    service = FinancesService()
+    
+    try:
+        return service.get_sales_report_by_payment_method(start_date, end_date, payment_method)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error al generar reporte: {str(e)}",
+        )
+
+
+@finances_router.get("/reports/sales-by-employee/", response_model=FilteredSalesReportDTO)
+def get_sales_by_employee(
+    start_date: str = Query(..., description="Fecha inicio (YYYY-MM-DD)"),
+    end_date: str = Query(..., description="Fecha fin (YYYY-MM-DD)"),
+    employee_id: str = Query(..., description="ID del empleado/mesero"),
+    user=Depends(get_current_user),
+):
+    """CA2: Obtener ventas filtrado por empleado"""
+    _require_admin_or_employee(user)
+    service = FinancesService()
+    
+    try:
+        return service.get_sales_report_by_waiter(start_date, end_date, employee_id)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error al generar reporte: {str(e)}",
+        )
+
+
+@finances_router.get("/reports/detailed/", response_model=DetailedFinancialReportDTO)
+def get_detailed_financial_report(
+    start_date: str = Query(..., description="Fecha inicio (YYYY-MM-DD)"),
+    end_date: str = Query(..., description="Fecha fin (YYYY-MM-DD)"),
+    user=Depends(get_current_user),
+):
+    """CA3: Obtener reporte financiero detallado con métricas, totales, promedios y desgloses"""
+    _require_admin(user)
+    service = FinancesService()
+    
+    try:
+        return service.get_detailed_financial_report(start_date, end_date)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error al generar reporte: {str(e)}",
+        )
+
+
+@finances_router.get("/reports/comparison/", response_model=FinancialComparisonReportDTO)
+def get_financial_comparison(
+    current_start: str = Query(..., description="Período actual inicio (YYYY-MM-DD)"),
+    current_end: str = Query(..., description="Período actual fin (YYYY-MM-DD)"),
+    previous_start: str = Query(..., description="Período anterior inicio (YYYY-MM-DD)"),
+    previous_end: str = Query(..., description="Período anterior fin (YYYY-MM-DD)"),
+    user=Depends(get_current_user),
+):
+    """CA3: Obtener comparativa de períodos con insights y recomendaciones"""
+    _require_admin(user)
+    service = FinancesService()
+    
+    try:
+        return service.get_financial_comparison_report(
+            current_start, current_end, previous_start, previous_end
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
