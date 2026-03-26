@@ -5,7 +5,7 @@ from datetime import datetime
 from src.modules.Sales.domain.entities.sale import Sale
 
 
-class ISalesRepository(ABC):
+class SalesRepositoryInterface(ABC):
     @abstractmethod
     def create(self, sale: Sale) -> Sale:
         pass
