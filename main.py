@@ -15,6 +15,7 @@ from src.modules.Sales.infrastructure.api.sales_router import sales_router
 from src.modules.Finances.infrastructure.api.finances_router import finances_router
 from src.modules.Shifts.infrastructure.api.shifts_router import shifts_router
 from src.modules.Attendance.infrastructure.api.attendance_router import attendance_router
+from src.modules.Payroll.infrastructure.api.payroll_router import payroll_router
 
 # Configuración de la aplicación con metadata para Swagger/OpenAPI
 app = FastAPI(
@@ -93,6 +94,10 @@ app = FastAPI(
         {
             "name": "Asistencia",
             "description": "Control de asistencia y registro de entrada/salida de empleados"
+        },
+        {
+            "name": "Nómina",
+            "description": "Gestión de nómina básica: cálculo de horas trabajadas, ausencias justificadas/injustificadas, y exportación de datos para sistemas de nómina externos"
         }
     ]
 )
@@ -106,6 +111,7 @@ app.include_router(sales_router)
 app.include_router(finances_router)
 app.include_router(shifts_router)
 app.include_router(attendance_router)
+app.include_router(payroll_router)
 
 inventory_daily_check_task: asyncio.Task | None = None
 
